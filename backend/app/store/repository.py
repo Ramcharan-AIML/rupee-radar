@@ -20,14 +20,15 @@ def save_analysis(analysis: Analysis) -> None:
         # 1. Insert or replace analysis header
         conn.execute(
             """
-            INSERT OR REPLACE INTO analyses (session_id, created_at, metrics, insights)
-            VALUES (?, ?, ?, ?)
+            INSERT OR REPLACE INTO analyses (session_id, created_at, metrics, insights, narrative)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 analysis.session_id,
                 analysis.created_at.isoformat(),
                 analysis.metrics.model_dump_json(),
                 json.dumps(analysis.insights),
+                analysis.narrative,
             ),
         )
 
@@ -141,6 +142,7 @@ def get_analysis(session_id: str) -> Analysis | None:
             recurring=recurring,
             metrics=metrics,
             insights=insights,
+            narrative=row["narrative"],
         )
 
 
@@ -148,7 +150,7 @@ def list_analyses() -> list[AnalysisHistoryItem]:
     """Retrieve summaries of all analyses stored in database, ordered by creation date desc."""
     with get_db_conn() as conn:
         rows = conn.execute(
-            "SELECT session_id, created_at, metrics, insights FROM analyses ORDER BY created_at DESC"
+            "SELECT session_id, created_at, metrics, insights, narrative FROM analyses ORDER BY created_at DESC"
         ).fetchall()
 
         history = []
@@ -165,6 +167,7 @@ def list_analyses() -> list[AnalysisHistoryItem]:
                     created_at=created_at,
                     metrics=Metrics(**metrics_dict),
                     insights=json.loads(r["insights"]),
+                    narrative=r["narrative"],
                 )
             )
         return history

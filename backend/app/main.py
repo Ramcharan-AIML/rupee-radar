@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import routes_analysis, routes_health, routes_upload, routes_usage
+from app.api import routes_analysis, routes_health, routes_upload, routes_usage, routes_chat, routes_report
 from app.config import get_settings
 from app.store.db import init_db
 
@@ -40,6 +40,8 @@ def create_app() -> FastAPI:
     app.include_router(routes_upload.router)
     app.include_router(routes_analysis.router)
     app.include_router(routes_usage.router)
+    app.include_router(routes_chat.router)
+    app.include_router(routes_report.router)
 
     @app.get("/", tags=["root"])
     def root() -> dict[str, str]:

@@ -1,8 +1,6 @@
 """[1] Ingest & parse — load a bank-statement file into raw rows + a SchemaReport.
 
-Phase 2 supports CSV (the primary format). The hard part is that every bank lays out its
-statement differently, so we **auto-detect** which columns hold the date, description, and
-amount(s) by fuzzy-matching the headers against known synonyms. XLSX/PDF arrive in Phase 13.
+Supports CSV, Excel (XLSX), and PDF statements.
 """
 
 from __future__ import annotations
@@ -99,6 +97,19 @@ class IngestResult:
     report: SchemaReport = field(default_factory=SchemaReport)
 
 
+def ingest(content: bytes, filename: str) -> IngestResult:
+    """Read a bank statement file and parse it into standard canonical row records.
+
+    Dispatches to CSV, XLSX, or PDF parsers based on filename extension.
+    """
+    ext = filename.lower()
+    if ext.endswith((".xlsx", ".xls")):
+        return ingest_xlsx(content)
+    if ext.endswith(".pdf"):
+        return ingest_pdf(content)
+    return ingest_csv(content)
+
+
 def ingest_csv(source: Union[str, Path, bytes]) -> IngestResult:
     """Read a CSV into raw rows keyed by detected canonical fields."""
     if isinstance(source, bytes):
@@ -133,4 +144,136 @@ def ingest_csv(source: Union[str, Path, bytes]) -> IngestResult:
         confidence=_confidence(mapping),
         warnings=warnings,
     )
+    return IngestResult(rows=rows, columns=mapping, report=report)
+
+
+def ingest_xlsx(content: bytes) -> IngestResult:
+    """Read an Excel statement sheet into raw rows."""
+    df = pd.read_excel(io.BytesIO(content), dtype=str, keep_default_na=False)
+    df.columns = [str(c).strip() for c in df.columns]
+
+    mapping, warnings = detect_columns(list(df.columns))
+
+    rows: list[dict[str, str]] = []
+    for _, raw in df.iterrows():
+        row = {
+            canonical: str(raw[source_col]).strip()
+            for canonical, source_col in mapping.items()
+            if source_col is not None and source_col in df.columns
+        }
+        rows.append(row)
+
+    report = SchemaReport(
+        detected_columns=mapping,
+        total_rows=len(rows),
+        confidence=_confidence(mapping),
+        warnings=warnings,
+    )
+    return IngestResult(rows=rows, columns=mapping, report=report)
+
+
+def ingest_pdf(content: bytes) -> IngestResult:
+    """Scrape text from PDF and scan for transaction records.
+
+    Uses a hybrid approach:
+    1. Looks for structured PDF tables.
+    2. Falls back to line-by-line regex scanning for dates and numeric amounts.
+    """
+    import pdfplumber
+
+    rows: list[dict[str, str]] = []
+    parsed_via_table = False
+
+    # Regex patterns for date, description, and amounts mapping fallback
+    date_pattern = re.compile(
+        r"\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b|\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b|\b(\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{2,4})\b",
+        re.IGNORECASE,
+    )
+    # Simple amount regex (requires decimal dot like .00 or .50)
+    amount_pattern = re.compile(r"\b(\d{1,3}(?:,\d{3})*(?:\.\d{2}))\b")
+
+    with pdfplumber.open(io.BytesIO(content)) as pdf:
+        for page in pdf.pages:
+            # 1. Try Structured Tables first
+            tables = page.extract_tables()
+            for table in tables:
+                if len(table) > 1:
+                    headers = [str(cell or "").strip() for cell in table[0]]
+                    mapping, warnings = detect_columns(headers)
+                    if _confidence(mapping) >= 0.5:
+                        for row_data in table[1:]:
+                            row = {}
+                            for canonical, col_name in mapping.items():
+                                if col_name is not None:
+                                    try:
+                                        col_idx = headers.index(col_name)
+                                        row[canonical] = str(row_data[col_idx] or "").strip()
+                                    except (ValueError, IndexError):
+                                        pass
+                            if row:
+                                rows.append(row)
+                        parsed_via_table = True
+
+            if parsed_via_table:
+                continue
+
+            # 2. Line-by-line Regex Scraper Fallback
+            text = page.extract_text()
+            if not text:
+                continue
+
+            for line in text.split("\n"):
+                line = line.strip()
+                date_match = date_pattern.search(line)
+                if not date_match:
+                    continue
+
+                date_str = next(g for g in date_match.groups() if g is not None)
+                remaining = line.replace(date_str, "", 1).strip()
+
+                amounts = []
+                for match in amount_pattern.finditer(remaining):
+                    val_str = match.group(1)
+                    val_clean = val_str.replace(",", "")
+                    try:
+                        val = float(val_clean)
+                        if val > 0.0:
+                            amounts.append((val_str, val))
+                    except ValueError:
+                        pass
+
+                if not amounts:
+                    continue
+
+                # Clean description out by removing amounts
+                desc = remaining
+                for val_str, _ in amounts:
+                    desc = desc.replace(val_str, "", 1)
+                desc = re.sub(r"\s+", " ", desc).strip()
+
+                # Map amounts: if >=2 amounts, assume second-to-last is txn amount, last is balance
+                if len(amounts) >= 2:
+                    tx_amount = amounts[-2][0]
+                    balance = amounts[-1][0]
+                else:
+                    tx_amount = amounts[0][0]
+                    balance = ""
+
+                rows.append(
+                    {
+                        "date": date_str,
+                        "description": desc or "UNKNOWN TRANSACTION",
+                        "amount": tx_amount,
+                        "balance": balance,
+                    }
+                )
+
+    mapping = {"date": "date", "description": "description", "amount": "amount"}
+    report = SchemaReport(
+        detected_columns=mapping,
+        total_rows=len(rows),
+        confidence=1.0 if rows else 0.0,
+        warnings=["Parsed unstructured PDF via regex scanning."] if not parsed_via_table else [],
+    )
+
     return IngestResult(rows=rows, columns=mapping, report=report)

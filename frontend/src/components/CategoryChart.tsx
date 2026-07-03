@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 import type { Metrics } from "../types";
 import { formatInr } from "../lib/format";
 
@@ -22,105 +22,83 @@ export default function CategoryChart({ metrics }: { metrics: Metrics }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-base font-semibold text-slate-900 mb-6">Spending by Category</h2>
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 flex flex-col justify-between min-h-[360px]">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900">Spending by Category</h2>
+          <p className="text-xs text-slate-400">Horizontal distribution of expenses</p>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">Total Spend</span>
+          <span className="text-base font-bold text-slate-800">{formatInr(totalSpend)}</span>
+        </div>
+      </div>
+
       {data.length === 0 ? (
-        <p className="py-12 text-center text-sm text-slate-400">No spending to chart.</p>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-slate-400">No spending data to display.</p>
+        </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
-          {/* Donut Chart Container */}
-          <div className="relative w-[200px] h-[200px] flex-shrink-0 flex items-center justify-center">
-            {/* Center Label */}
-            <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
-                Total Spend
-              </span>
-              <span className="text-lg font-bold text-slate-800 mt-0.5">
-                {formatInr(totalSpend)}
-              </span>
-            </div>
-
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={85}
-                  paddingAngle={2}
-                  onMouseEnter={(_, index) => setActiveIndex(index)}
-                  onMouseLeave={() => setActiveIndex(null)}
-                >
-                  {data.map((_, i) => (
-                    <Cell 
-                      key={i} 
-                      fill={COLORS[i % COLORS.length]} 
-                      style={{
-                        opacity: activeIndex === null || activeIndex === i ? 1 : 0.6,
-                        transition: "opacity 200ms ease-in-out",
-                        cursor: "pointer"
-                      }}
-                      className="outline-none"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => formatInr(Number(value))}
-                  contentStyle={{
-                    backgroundColor: "rgba(15, 23, 42, 0.9)",
-                    border: "none",
-                    borderRadius: "8px",
-                    color: "#fff",
-                    fontSize: "12px",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Details / Legend List */}
-          <div className="w-full flex-1 max-h-[200px] overflow-y-auto pr-1 space-y-2 custom-scrollbar">
-            {data.map((item, i) => {
-              const percentage = totalSpend > 0 ? (item.value / totalSpend) * 100 : 0;
-              const isHighlighted = activeIndex === i;
-              return (
-                <div
-                  key={item.name}
-                  className={`flex items-center justify-between p-2 rounded-xl transition-all duration-200 ${
-                    isHighlighted ? "bg-slate-50 translate-x-1" : "hover:bg-slate-50/50"
-                  }`}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  onMouseLeave={() => setActiveIndex(null)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span 
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200" 
-                      style={{ 
-                        backgroundColor: COLORS[i % COLORS.length],
-                        transform: isHighlighted ? "scale(1.25)" : "scale(1)"
-                      }}
-                    />
-                    <span className="text-sm font-medium text-slate-700">{item.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-slate-800">
-                      {formatInr(item.value)}
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-400">
-                      {percentage.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="h-[280px] w-full flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f8fafc" />
+              <XAxis
+                type="number"
+                tickFormatter={(val) => `₹${val}`}
+                stroke="#94a3b8"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                stroke="#475569"
+                fontSize={12}
+                fontWeight={500}
+                tickLine={false}
+                axisLine={false}
+                width={100}
+              />
+              <Tooltip
+                cursor={{ fill: "#f8fafc" }}
+                formatter={(value) => [formatInr(Number(value)), "Spend"]}
+                contentStyle={{
+                  backgroundColor: "#fff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                }}
+              />
+              <Bar
+                dataKey="value"
+                radius={[0, 6, 6, 0]}
+                barSize={16}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
+                {data.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={COLORS[i % COLORS.length]}
+                    style={{
+                      opacity: activeIndex === null || activeIndex === i ? 1 : 0.6,
+                      transition: "opacity 200ms ease-in-out",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>
   );
 }
-

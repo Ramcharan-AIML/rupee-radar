@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RupeeRadar Financial Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #334155;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            border-b: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .meta {
+            font-size: 12px;
+            color: #64748b;
+            text-align: right;
+        }
+        h1, h2 {
+            color: #0f172a;
+        }
+        h2 {
+            font-size: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .grid {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 30px;
+        }
+        .col {
+            display: table-cell;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .col:not(:last-child) {
+            margin-right: 15px; /* Note: table-cell doesn't support margin directly, handled by borders/spacing */
+        }
+        .col-val {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 5px;
+        }
+        .col-lbl {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+        .narrative {
+            background-color: #f5f3ff;
+            border-left: 4px solid #8b5cf6;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #4c1d95;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 10px;
+            text-align: left;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        .amount {
+            text-align: right;
+            font-weight: 600;
+        }
+        .bar-container {
+            width: 100%;
+            background-color: #f1f5f9;
+            border-radius: 4px;
+            height: 8px;
+            margin-top: 4px;
+        }
+        .bar-fill {
+            background-color: #6366f1;
+            height: 100%;
+            border-radius: 4px;
+        }
+        .insights-list {
+            padding-left: 20px;
+            margin-bottom: 30px;
+        }
+        .insights-list li {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-monthly { background-color: #e0e7ff; color: #4338ca; }
+        .badge-weekly { background-color: #f3e8ff; color: #6b21a8; }
+        .badge-quarterly { background-color: #ecfeff; color: #083344; }
+        .badge-yearly { background-color: #ccfbf1; color: #115e59; }
+        .badge-irregular { background-color: #fef3c7; color: #78350f; }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📡 RupeeRadar</div>
+        <div class="meta">
+            <strong>Statement Analysis Report</strong><br>
+            Session ID: {{ session_id[:12] }}<br>
+            Generated: {{ generated_at }}
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="grid">
+        <div class="col">
+            <div class="col-lbl">Total Spend</div>
+            <div class="col-val">₹{{ "{:,.0f}".format(metrics.total_spend) }}</div>
+        </div>
+        <div style="display: table-cell; width: 15px;"></div>
+        <div class="col">
+            <div class="col-lbl">Total Income</div>
+            <div class="col-val">₹{{ "{:,.0f}".format(metrics.total_income) }}</div>
+        </div>
+        <div style="display: table-cell; width: 15px;"></div>
+        <div class="col">
+            <div class="col-lbl">Net Savings</div>
+            <div class="col-val">₹{{ "{:,.0f}".format(metrics.net_savings) }}</div>
+        </div>
+        <div style="display: table-cell; width: 15px;"></div>
+        <div class="col">
+            <div class="col-lbl">Savings Rate</div>
+            <div class="col-val">{{ "{:.1f}%".format(metrics.savings_rate * 100) }}</div>
+        </div>
+    </div>
+
+    <!-- Narrative Briefing -->
+    {% if narrative %}
+    <h2>Executive Briefing</h2>
+    <div class="narrative">
+        {{ narrative }}
+    </div>
+    {% endif %}
+
+    <!-- Insights list -->
+    <h2>Key Insights</h2>
+    <ul class="insights-list">
+        {% for ins in insights %}
+        <li>{{ ins }}</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Spending Breakdown Table & bar chart -->
+    <h2>Spending by Category</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40%;">Category</th>
+                <th style="width: 40%;">Distribution</th>
+                <th style="width: 20%; text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat, amt in metrics.top_categories %}
+            {% set pct = (amt / metrics.total_spend * 100) if metrics.total_spend > 0 else 0 %}
+            <tr>
+                <td><strong>{{ cat }}</strong></td>
+                <td>
+                    <span style="font-size: 11px; color: #64748b;">{{ "{:.1f}%".format(pct) }}</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="width: {{ pct }}%;"></div>
+                    </div>
+                </td>
+                <td class="amount">₹{{ "{:,.2f}".format(amt) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Recurring Streams -->
+    {% if recurring %}
+    <h2>Recurring Payments</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Stream / Merchant</th>
+                <th>Category</th>
+                <th>Cadence</th>
+                <th style="text-align: center;">Occurrences</th>
+                <th style="text-align: right;">Typical Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in recurring %}
+            <tr>
+                <td><strong>{{ r.merchant }}</strong></td>
+                <td>{{ r.category }}</td>
+                <td><span class="badge badge-{{ r.cadence }}">{{ r.cadence }}</span></td>
+                <td style="text-align: center;">{{ r.occurrences }}x</td>
+                <td class="amount">₹{{ "{:,.2f}".format(r.typical_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <script>
+        // Auto-trigger browser print utility when loaded in window
+        window.onload = function() {
+            if (navigator.userAgent.indexOf("WeasyPrint") === -1) {
+                setTimeout(function() {
+                    window.print();
+                }, 500);
+            }
+        };
+    </script>
+</body>
+</html>

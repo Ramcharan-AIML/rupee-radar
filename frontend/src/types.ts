@@ -42,6 +42,7 @@ export interface Analysis {
   recurring: RecurringGroup[];
   metrics: Metrics;
   insights: string[];
+  narrative?: string | null;
 }
 
 export interface SchemaReport {

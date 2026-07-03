@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
@@ -246,8 +247,17 @@ def clean(ingested: IngestResult) -> CleanResult:
     return CleanResult(transactions=transactions, report=report)
 
 
-def ingest_and_clean(source) -> CleanResult:
-    """Convenience: ingest a CSV then clean it (used from Phase 4's upload route)."""
-    from app.pipeline.ingest import ingest_csv
+def ingest_and_clean(source, filename: str = "statement.csv") -> CleanResult:
+    """Convenience: ingest a bank-statement file then clean it."""
+    from app.pipeline.ingest import ingest
 
-    return clean(ingest_csv(source))
+    if isinstance(source, (str, Path)):
+        path = Path(source)
+        with open(path, "rb") as f:
+            content = f.read()
+        name = path.name
+    else:
+        content = source
+        name = filename
+
+    return clean(ingest(content, name))

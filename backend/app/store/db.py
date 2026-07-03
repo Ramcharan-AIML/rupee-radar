@@ -32,9 +32,17 @@ def init_db() -> None:
             session_id TEXT PRIMARY KEY,
             created_at TEXT NOT NULL,
             metrics TEXT NOT NULL,
-            insights TEXT NOT NULL
+            insights TEXT NOT NULL,
+            narrative TEXT
         );
         """)
+
+        # Migration: alter table if analyses lacks narrative column
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(analyses);")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "narrative" not in columns:
+            conn.execute("ALTER TABLE analyses ADD COLUMN narrative TEXT;")
 
         # Create transactions table
         conn.execute("""

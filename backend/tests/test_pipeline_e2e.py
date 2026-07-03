@@ -57,7 +57,7 @@ def test_empty_file_returns_400():
 
 
 def test_unsupported_file_type_returns_415():
-    resp = client.post("/api/upload", files={"file": ("statement.pdf", b"%PDF-1.4", "application/pdf")})
+    resp = client.post("/api/upload", files={"file": ("statement.png", b"fake png bytes", "image/png")})
     assert resp.status_code == 415
 
 

@@ -109,6 +109,7 @@ class Analysis(BaseModel):
     recurring: list[RecurringGroup] = Field(default_factory=list)
     metrics: Metrics = Field(default_factory=Metrics)
     insights: list[str] = Field(default_factory=list)
+    narrative: Optional[str] = None
 
 
 class AnalysisHistoryItem(BaseModel):
@@ -118,6 +119,7 @@ class AnalysisHistoryItem(BaseModel):
     created_at: datetime
     metrics: Metrics
     insights: list[str]
+    narrative: Optional[str] = None
 
 
 class UploadResponse(BaseModel):

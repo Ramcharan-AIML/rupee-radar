@@ -14,11 +14,12 @@ from app.pipeline.categorize import categorize_transactions
 from app.pipeline.clean import ingest_and_clean
 from app.pipeline.insights import generate_insights
 from app.pipeline.metrics import compute_metrics
-from app.store.session_store import get_session_store
+from app.pipeline.recurring import detect_recurring_payments
+from app.store.repository import save_analysis
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
-_ALLOWED_SUFFIXES = (".csv", ".txt")
+_ALLOWED_SUFFIXES = ("..csv", ".csv", ".txt")  # Support loose file name matches
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -53,16 +54,17 @@ async def upload_statement(file: UploadFile = File(...)) -> UploadResponse:
         ) from exc
 
     categorize_transactions(cleaned.transactions)
+    recurring_groups = detect_recurring_payments(cleaned.transactions)
     metrics = compute_metrics(cleaned.transactions)
     insights = generate_insights(cleaned.transactions, metrics)
 
     analysis = Analysis(
         transactions=cleaned.transactions,
-        recurring=[],  # populated in Phase 6
+        recurring=recurring_groups,
         metrics=metrics,
         insights=insights,
     )
-    get_session_store().put(analysis)
+    save_analysis(analysis)
 
     return UploadResponse(
         session_id=analysis.session_id,

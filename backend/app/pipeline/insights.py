@@ -65,15 +65,13 @@ def generate_insights(transactions: list[Transaction], metrics: Metrics) -> list
             f"{bt.description_clean.title()} on {bt.date:%d %b %Y}."
         )
 
-    # 5) Subscriptions placeholder (real recurring totals arrive in Phase 6)
-    subs = sum(
-        t.amount for t in transactions
-        if t.category == "Subscriptions" and t.direction == "debit"
-    )
-    if subs > 0:
+    # 5) Real recurring total (Phase 6)
+    recurring_spend = sum(t.amount for t in transactions if t.is_recurring and t.direction == "debit")
+    if recurring_spend > 0:
+        recurring_merchants = len({t.description_clean for t in transactions if t.is_recurring and t.direction == "debit"})
         insights.append(
-            f"You spent {_inr(subs)} on subscriptions. "
-            "(Recurring detection will pin down exact monthly costs soon.)"
+            f"You spent {_inr(recurring_spend)} across {recurring_merchants} recurring "
+            f"payment stream(s) (subscriptions, EMIs, rent, or SIPs) this period."
         )
 
     return insights

@@ -83,7 +83,14 @@ class Settings(BaseSettings):
     @property
     def provider_limits(self) -> RateLimits | None:
         """Rate limits for the active provider/model (None = unlimited, e.g. ollama/none)."""
-        return limits_for(self.llm_provider, self.active_model)
+        if self.llm_provider == "groq":
+            return RateLimits(
+                requests_per_minute=self.groq_rpm_limit,
+                tokens_per_minute=self.groq_tpm_limit,
+                requests_per_day=self.groq_rpd_limit,
+                tokens_per_day=self.groq_tpd_limit,
+            )
+        return None
 
     @model_validator(mode="after")
     def _clamp_to_provider_limits(self) -> "Settings":

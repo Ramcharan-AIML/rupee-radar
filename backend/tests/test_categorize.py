@@ -16,6 +16,15 @@ from app.pipeline.rules import match_category
 SAMPLE = Path(__file__).parent / "sample_statements" / "messy_sample.csv"
 
 
+@pytest.fixture(autouse=True)
+def mock_no_llm():
+    """Ensure LLM fallback is disabled during rule-based testing."""
+    from unittest.mock import patch
+    with patch("app.llm.factory.get_llm_provider", return_value=None):
+        yield
+
+
+
 def _txn(description_clean: str, direction: str = "debit") -> Transaction:
     return Transaction(
         date=date(2025, 1, 1),

@@ -2,6 +2,7 @@ import type { UploadResponse } from "../types";
 import SummaryCards from "../components/SummaryCards";
 import CategoryChart from "../components/CategoryChart";
 import InsightsPanel from "../components/InsightsPanel";
+import RecurringTable from "../components/RecurringTable";
 import TransactionTable from "../components/TransactionTable";
 
 export default function Dashboard({ data }: { data: UploadResponse }) {
@@ -23,7 +24,10 @@ export default function Dashboard({ data }: { data: UploadResponse }) {
         <InsightsPanel insights={analysis.insights} />
       </div>
 
+      <RecurringTable recurring={analysis.recurring} />
+
       <TransactionTable transactions={analysis.transactions} />
     </div>
   );
 }
+

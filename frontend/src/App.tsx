@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Upload from "./pages/Upload";
 import Dashboard from "./pages/Dashboard";
+import BudgetBadge from "./components/BudgetBadge";
 import type { UploadResponse } from "./types";
 
 export default function App() {
@@ -10,13 +11,17 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📡</span>
-            <span className="text-lg font-bold tracking-tight">RupeeRadar</span>
-            <span className="hidden text-xs text-slate-400 sm:inline">
-              personal finance analyst
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📡</span>
+              <span className="text-lg font-bold tracking-tight">RupeeRadar</span>
+              <span className="hidden text-xs text-slate-400 sm:inline">
+                personal finance analyst
+              </span>
+            </div>
+            <BudgetBadge />
           </div>
+
           {data && (
             <button
               onClick={() => setData(null)}

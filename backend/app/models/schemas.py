@@ -111,9 +111,19 @@ class Analysis(BaseModel):
     insights: list[str] = Field(default_factory=list)
 
 
+class AnalysisHistoryItem(BaseModel):
+    """Simplified view of historical uploads for the history dashboard endpoint."""
+
+    session_id: str
+    created_at: datetime
+    metrics: Metrics
+    insights: list[str]
+
+
 class UploadResponse(BaseModel):
     """Response for `POST /api/upload` — the analysis plus how the file was parsed."""
 
     session_id: str
     analysis: Analysis
     schema_report: SchemaReport
+

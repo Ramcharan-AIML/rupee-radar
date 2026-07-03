@@ -14,7 +14,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Investments: "bg-lime-50 text-lime-700 ring-lime-600/10",
   Other: "bg-slate-50 text-slate-600 ring-slate-600/10",
 };
-
 const PAGE_SIZE = 10;
 
 export default function TransactionTable({ transactions }: { transactions: Transaction[] }) {

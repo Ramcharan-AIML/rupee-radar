@@ -58,6 +58,7 @@ class Settings(BaseSettings):
 
     # --- Server / CORS ---
     frontend_origin: str = "http://localhost:5173"
+    frontend_dist_dir: str = "../frontend/dist"
 
     @property
     def llm_enabled(self) -> bool:

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  rupeeradar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rupee_radar_app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Keep the SQLite database persistent across container restarts/updates
+      - rupee_radar_data:/app/data
+    environment:
+      # Provider Selection
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
+      # Groq credentials (if using groq)
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      # Ollama local URL (if using ollama - e.g. http://host.docker.internal:11434)
+      - OLLAMA_HOST=${OLLAMA_HOST:-}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.3}
+      # Database storage path (internal to container)
+      - DB_PATH=/app/data/rupeeradar.db
+      # Limits & Soft Budgets
+      - LLM_DAILY_TOKEN_BUDGET=${LLM_DAILY_TOKEN_BUDGET:-100000}
+      - LLM_MAX_TOKENS_PER_CALL=${LLM_MAX_TOKENS_PER_CALL:-500}
+      - LLM_CATEGORIZE_BATCH=${LLM_CATEGORIZE_BATCH:-15}
+      - LLM_ENABLE_CHAT=${LLM_ENABLE_CHAT:-true}
+      - LLM_ENABLE_NARRATIVE=${LLM_ENABLE_NARRATIVE:-true}
+      - LLM_INSIGHT_MODE=${LLM_INSIGHT_MODE:-polish}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-10}
+      # CORS Origin
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:8000}
+    restart: unless-stopped
+
+volumes:
+  rupee_radar_data:
+    driver: local

@@ -1,0 +1,37 @@
+# VCS
+.git
+.gitignore
+
+# Build caches and local modules
+node_modules
+**/node_modules
+frontend/dist
+.venv
+**/.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+**/.pytest_cache
+.DS_Store
+
+# Local SQLite databases and logs
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+*.log
+**/*.log
+
+# Project Documentation and samples (not needed for runner)
+docs/
+sample_data/
+README.md
+LICENSE
+
+# Pytest files
+backend/pytest.ini
+backend/tests/
+
+# Local Environment settings
+.env
+.env.*
+!.env.example
